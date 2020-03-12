@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b2dbe4a3-3df9-4ab9-a943-48d7c941e47a" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<sub-flow name="exphandlingSubflow" doc:id="5996fce0-44b0-4760-bd79-08297d6a47f7" >
+		<logger level="INFO" doc:name="Logger" doc:id="20f7836c-48c1-4ca0-9263-f657de2ff25f" message="Start of the subflow"/>
+		<set-variable value="abacded" doc:name="Set Variable" doc:id="68f52950-2a0e-4dcf-a12e-acdc12f89665" variableName="var1"/>
+		<try doc:name="Try" doc:id="cfb852ef-a2fe-4ef0-ab2b-dbce3ee8434c" >
+			<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="ff0b4c02-f525-4f59-bded-cebfd738bcc6" value="#[attributes.queryParams.Id]" message="EmployeeId must be Integer" />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="73276c09-c40b-459a-a2ec-820c62dbdc8a" type="ANY">
+					<logger level="INFO" doc:name="Logger" doc:id="4f20b10e-d01d-45af-ba2e-d088332961d8" message="The flow is errored"/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="e9b1c3dd-6f04-4f63-8522-040ccdce5124" message="End of the subflow"/>
+	</sub-flow>
+	<flow name="exceptionhandlingFlow" doc:id="14c12f34-a643-463a-83e6-8c1cf2765656" >
+		<http:listener doc:name="Listener" doc:id="1e9d246c-8f2b-44c8-bb27-53f6774f6501" config-ref="HTTP_Listener_config" path="/FetchEmp">
+			<http:error-response statusCode="#[vars.sCode]" reasonPhrase="#[vars.rPhrase]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="Eswara123" doc:name="Set Variable" doc:id="333f5631-0026-451c-b7e2-aa39e9adddc5" variableName="var1" />
+		<flow-ref doc:name="Flow Reference" doc:id="95a25cf4-570c-459c-8f16-d6c55e751ab4" name="exphandlingSubflow" />
+		<ee:transform doc:name="Transform Message" doc:id="41e35773-671b-421e-a4e8-4238595e5aa6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+"EmployeeId": attributes.queryParams.Id,
+"EmployeeName": "Eswara",
+"Status": "Y"
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="cfdad143-8dc5-44f2-b132-35074431c9ef" message='The value of variable is #[vars.var1]'/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c064634c-cfb2-464c-a462-8dd0e882f3f3" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="e7d67974-0bb3-4b8b-86cc-a17b76c111ff" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Status": 400,
+	"Message": error.description	
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="sCode" ><![CDATA[400]]></ee:set-variable>
+						<ee:set-variable variableName="rPhrase" ><![CDATA["EMPID should be number"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
