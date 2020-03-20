@@ -43,5 +43,6 @@ myVar map(item, index) -> using(id = item.bookId) {
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="83e48fd2-b7bc-44ec-80cf-5ad01858446b" message="End of the flow"/>
 	</flow>
 </mule>
