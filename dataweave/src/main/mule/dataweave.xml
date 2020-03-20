@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bdd0218b-f3de-42f0-8789-6c724d242c22" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="dataweaveFlow" doc:id="9518afb6-b51e-4c3a-b844-64dff1271829" >
+		<http:listener doc:name="Listener" doc:id="8b788c6b-7cff-49c0-8c13-cd46851e8254" config-ref="HTTP_Listener_config" path="/Dataweave" outputMimeType="application/json"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f76e2a2b-6bab-42b9-adb2-e5c751a5098f" message="[+++] Start of the Program"/>
+		<ee:transform doc:name="Transform Message" doc:id="8e33116b-1591-47d7-ba3a-b1954df15140" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+var myVar = [
+    { bookId: 101,
+    title: "ComputerScience TextBook",
+    price: "200.00"},
+    { bookId: 102,
+    title: "Mathematics TextBook",
+    price: "400.00"}
+]
+var myVar1 = [
+    { bookId: 101,
+    author: "Vivek"},
+    { bookId: 102,
+    author: "Nitin"}
+]
+output application/json
+---
+myVar map(item, index) -> using(id = item.bookId) {
+    "Id": item.bookId,
+    "Title": item.title as String,
+    "Cost": item.price as Number,
+    "ReleaseDate": now() >> "IST",
+    "Subject": substringBefore(item.title, " "),
+    (myVar1 filter ($.*bookId contains id) map (item) -> {
+        "Author": item.author
+    })
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
